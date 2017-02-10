@@ -5,7 +5,8 @@ services:
         container_name: 'app'
         working_dir: /home/app
         ports:  #HOST:CONTAINER
-            - 3000:3000 
+            - 3000:3000 #raw express
+            - 4000:4000 #browser sync
         volumes:
             - ../app:/home/app
         command: npm start 

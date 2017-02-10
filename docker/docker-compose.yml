@@ -10,3 +10,4 @@ services:
             - ../app:/home/app
         command: npm start 
 # Mac ~/src/nodeenv/docker$ docker-compose run app npm init
+# docker-compose run app npm install --save-dev gulp gulp-nodemon browser-sync

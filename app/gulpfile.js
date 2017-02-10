@@ -14,7 +14,7 @@ gulp.task('browser-sync', function() {
 gulp.task('serve', ['browser-sync'], function () {
   nodemon({
       script: './bin/www' ,
-      nodeArgs: ['--debug']
+      nodeArgs: ['--debug=0.0.0.0:5858','--nolazy'] // --debug --debug-brk=5858
   });
 });
 

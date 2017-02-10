@@ -7,6 +7,7 @@ services:
         ports:  #HOST:CONTAINER
             - 3000:3000 #raw express
             - 4000:4000 #browser sync
+            - 5858:5858 #debug port
         volumes:
             - ../app:/home/app
         command: npm start 

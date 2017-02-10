@@ -13,7 +13,8 @@ gulp.task('browser-sync', function() {
 
 gulp.task('serve', ['browser-sync'], function () {
   nodemon({
-      script: './bin/www' 
+      script: './bin/www' ,
+      nodeArgs: ['--debug']
   });
 });
 

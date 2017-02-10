@@ -8,4 +8,6 @@ WORKDIR $HOME
 RUN npm install -g gulp \
 && npm install -g typescript \
 && npm install express-generator -g \
+&& npm install gulp -g \
+&& npm install nodemon -g \
 && npm cache clear

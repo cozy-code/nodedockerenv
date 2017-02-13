@@ -18,4 +18,4 @@ services:
             - .env
 # Mac ~/src/nodeenv/docker$ docker-compose run app npm init
 # docker-compose run app npm install --save-dev gulp gulp-nodemon browser-sync
-# docker-compose run app npm install --save mysql
+# docker-compose run app npm install --save mysql sequelize

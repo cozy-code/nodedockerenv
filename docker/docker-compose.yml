@@ -8,6 +8,8 @@ services:
             - 3000:3000 #raw express
             - 4000:4000 #browser sync
             - 5858:5858 #debug port
+        env_file: 
+            - .env
         volumes:
             - ../app:/home/app
         command: npm start
@@ -16,6 +18,15 @@ services:
         image: mariadb
         env_file: 
             - .env
+        volumes:       #  追加
+            - ./mariadb/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+
 # Mac ~/src/nodeenv/docker$ docker-compose run app npm init
 # docker-compose run app npm install --save-dev gulp gulp-nodemon browser-sync
 # docker-compose run app npm install --save mysql sequelize
+# docker-compose run app npm install --save-dev sequelize-cli
+
+
+# create database app_db;
+# grant all privileges on app_db.* to 'appuser'@'%' identified by 'example';
+# FLUSH PRIVILEGES;

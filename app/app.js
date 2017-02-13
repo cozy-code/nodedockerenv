@@ -10,7 +10,27 @@ var users = require('./routes/users');
 
 var models = require("./models");
 
-models.sequelize.sync();
+function init_db(retry){
+  if(retry>30){
+    console.log('DB initialize failed');
+    return;
+  }
+  return models.sequelize.authenticate().then(
+    function(){
+      console.log('DB connected');
+      models.sequelize.sync();
+    },
+    function(error){
+      console.log('ERROR !!! DB cannot connect!!! ');
+      new Promise((resolve) => setTimeout(resolve,1000)).then(
+        function(){
+          init_db(retry+1);
+        });
+    }
+  );  
+}
+
+init_db(0);
 
 var app = express();
 

@@ -19,6 +19,7 @@
   "devDependencies": {
     "browser-sync": "^2.18.7",
     "gulp": "^3.9.1",
-    "gulp-nodemon": "^2.2.1"
+    "gulp-nodemon": "^2.2.1",
+    "sequelize-cli": "^2.5.1"
   }
 }

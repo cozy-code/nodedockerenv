@@ -58,3 +58,5 @@ typings/
 .env
 
 .v8flags.*
+
+app/src/js/

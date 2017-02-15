@@ -5,22 +5,36 @@ var browserSync = require('browser-sync').create();
 var ts = require('gulp-typescript');
 var sourcemaps = require('gulp-sourcemaps');
 var path=require('path');
-
-var TS_SRC = './src/ts/**/*.ts';
+var TS_SRC_ROOT ='./src/ts';
+var TS_SRC = TS_SRC_ROOT  + '/**/*.ts';
 var JS_DEST = './src/js/';
 
 gulp.task("ts-compile", function () {
     // pull in the project TypeScript config
     let tsProject = ts.createProject('tsconfig.json');
      return gulp.src(TS_SRC)
-        .pipe(sourcemaps.init())
+        .pipe(sourcemaps.init({identityMap:true}))
         .pipe(tsProject())
         .js
-        // https://github.com/floridoo/gulp-sourcemaps/issues/174
-        .pipe(sourcemaps.write('./', {
-            mapSources: (p) => path.basename(p), // This affects the "sources" attribute even if it is a no-op. I don't know why.
+        // // https://github.com/floridoo/gulp-sourcemaps/issues/174
+        // .pipe(sourcemaps.write('./', {
+        //     mapSources: (p) => path.basename(p), // This affects the "sources" attribute even if it is a no-op. I don't know why.
+        // }))
+        //https://www.npmjs.com/package/gulp-sourcemaps#write-inline-source-maps
+        // http://stackoverflow.com/a/34985647
+        .pipe(sourcemaps.write({
+            mapSources: (p) =>{
+                return path.basename(p); // This affects the "sources" attribute even if it is a no-op. I don't know why.
+            },
+            // includeContent:false,
+            // sourceRoot: function(file){
+            //     console.log('file=' + JSON.stringify( file )); 
+            //     return file.cwd; 
+            // }
+            sourceRoot:"",
         }))
-        .pipe(gulp.dest(JS_DEST));
+        //.pipe(gulp.dest(JS_DEST));
+        .pipe(gulp.dest(TS_SRC_ROOT));
 });
 
 gulp.task('browser-sync', function() {

@@ -10,6 +10,10 @@
             "name": "Attach to Port",
             "localRoot": "${workspaceRoot}/app/",
             "remoteRoot": "/home/app",
+            "sourceMaps": true,
+            "outFiles": [
+                "${workspaceRoot}/app/src/js/**/*.js"
+            ],
             "port": 5858
         }
     ]

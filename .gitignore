@@ -60,3 +60,4 @@ typings/
 .v8flags.*
 
 app/src/js/
+app/src/ts/**/*.js

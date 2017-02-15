@@ -12,11 +12,14 @@
     "ejs": "~2.5.5",
     "express": "~4.14.1",
     "morgan": "~1.7.0",
+    "mysql": "^2.13.0",
+    "sequelize": "^3.30.2",
     "serve-favicon": "~2.3.2"
   },
   "devDependencies": {
     "browser-sync": "^2.18.7",
     "gulp": "^3.9.1",
-    "gulp-nodemon": "^2.2.1"
+    "gulp-nodemon": "^2.2.1",
+    "sequelize-cli": "^2.5.1"
   }
 }

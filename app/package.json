@@ -20,6 +20,11 @@
     "browser-sync": "^2.18.7",
     "gulp": "^3.9.1",
     "gulp-nodemon": "^2.2.1",
-    "sequelize-cli": "^2.5.1"
+    "gulp-rename": "^1.2.2",
+    "gulp-sourcemaps": "^2.4.1",
+    "gulp-typescript": "^3.1.4",
+    "gulp-uglify": "^2.0.1",
+    "sequelize-cli": "^2.5.1",
+    "typescript": "^2.1.6"
   }
 }

@@ -4,6 +4,6 @@
         "target": "es5",
         "noImplicitAny": false,
         "inlineSourceMap": true,
-        "outDir": "./src/js"
+        /// "outDir": "./src/js"    //outDir define on gulpfile.js
     }
 }

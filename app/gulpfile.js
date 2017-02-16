@@ -11,11 +11,14 @@ var JS_DEST = './src/js/';
 
 gulp.task("ts-compile", function () {
     // pull in the project TypeScript config
-    let tsProject = ts.createProject('tsconfig.json');
+    let tsProject = ts.createProject('tsconfig.json',
+                {
+                    outDir: JS_DEST,
+                });
+
      return gulp.src(TS_SRC)
         .pipe(sourcemaps.init({identityMap:true}))
-        .pipe(tsProject())
-        .js
+        .pipe(tsProject()).js
         // // https://github.com/floridoo/gulp-sourcemaps/issues/174
         // .pipe(sourcemaps.write('./', {
         //     mapSources: (p) => path.basename(p), // This affects the "sources" attribute even if it is a no-op. I don't know why.

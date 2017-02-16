@@ -5,15 +5,18 @@
     "version": "0.2.0",
     "configurations": [
         {
+            //https://github.com/delfinof/debugging-in-docker
             "type": "node",
             "request": "attach",
             "name": "Attach to Port",
-            "localRoot": "${workspaceRoot}/app/",
+            "localRoot": "${workspaceRoot}/app",
             "remoteRoot": "/home/app",
             "sourceMaps": true,
             "outFiles": [
                 "${workspaceRoot}/app/src/js/**/*.js"
             ],
+            "trace": "sm",
+            "address": "localhost",
             "port": 5858
         }
     ]

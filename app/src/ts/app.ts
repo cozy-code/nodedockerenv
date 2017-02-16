@@ -8,7 +8,6 @@ import bodyParser = require('body-parser');
 import index from './routes/index';
 //import users from './routes/users';
 
-
 let app: express.Application = express();
 
 // view engine setup

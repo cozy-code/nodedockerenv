@@ -9,43 +9,66 @@ import index from './routes/index';
 import mongo from './routes/mongo';
 import * as mongoose from 'mongoose';
 
-let app: express.Application = express();
+class App {
+    public express: express.Application;
 
-let url='mongodb://mongo/nodeenv';
-mongoose.Connection = mongoose.connect(url);
+    constructor() {
+        // express instance
+        this.express = express();
+        console.log("express created.")
 
-// view engine setup
-app.set('views', path.join(__dirname, '../../views'));
-app.set('view engine', 'ejs');
+        //initialize database
+        let url = 'mongodb://mongo/nodeenv';
+        mongoose.connect(url);
 
-// uncomment after placing your favicon in /public
-//app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
-app.use(logger('dev'));
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public')));
+        // setup 
+        this.setViewEngine();
+        this.setMiddleWare();
+        this.setRoutes();
 
-app.use('/', index);
-app.use('/mongo', mongo);
+        this.setErrorHandler(); //must be after setRoutes
+    }
+    private setViewEngine(): void {
+        // view engine setup
+        this.express.set('views', path.join(__dirname, '../../views'));
+        this.express.set('view engine', 'ejs');
+    }
 
-// catch 404 and forward to error handler
-app.use(function(req, res, next) {
-  var err = new Error('Not Found');
-  err['status'] = 404;
-  next(err);
-});
+    private setMiddleWare(): void {
+        // uncomment after placing your favicon in /public
+        //app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
+        this.express.use(logger('dev'));
+        this.express.use(bodyParser.json());
+        this.express.use(bodyParser.urlencoded({ extended: false }));
+        this.express.use(cookieParser());
+        this.express.use(express.static(path.join(__dirname, 'public')));
+    }
 
-// error handler
-app.use(function(err, req, res, next) {
-  // set locals, only providing error in development
-  res.locals.message = err.message;
-  res.locals.error = req.app.get('env') === 'development' ? err : {};
+    private setErrorHandler(): void {
+        // catch 404 and forward to error handler
+        this.express.use(function (req: express.Request, res: express.Response, next) {
+            var err = new Error('Not Found');
+            err['status'] = 404;
+            next(err);
+        });
 
-  // render the error page
-  res.status(err.status || 500);
-  res.render('error');
-});
+        // error handler
+        this.express.use(function (err: Error, req: express.Request, res: express.Response, next: express.NextFunction) {
+            // set locals, only providing error in development
+            res.locals.message = err.message;
+            res.locals.error = req.app.get('env') === 'development' ? err : {};
 
-export = app;
+            // render the error page
+            res.status(err['status'] || 500);
+            res.render('error');
+        });
+    }
+
+    private setRoutes(): void {
+        this.express.use('/', index);
+        this.express.use('/mongo', mongo);
+    }
+}
+
+export default new App();
 

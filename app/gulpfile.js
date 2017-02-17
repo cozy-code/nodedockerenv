@@ -83,7 +83,8 @@ gulp.task('browser-sync', function() {
 
 gulp.task('serve', ['ts-compile','browser-sync','watch'], function () {
   nodemon({
-      script: './bin/www' ,
+      //script: './bin/www' ,
+      script: path.join(JS_DEST,'/www.js') ,
       nodeArgs: ['--debug=0.0.0.0:5858','--nolazy'] // --debug --debug-brk=5858 '--debug=0.0.0.0:5858' '--inspect'
   });
 });

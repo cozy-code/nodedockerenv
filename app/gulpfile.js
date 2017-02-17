@@ -5,9 +5,11 @@ var browserSync = require('browser-sync').create();
 var ts = require('gulp-typescript');
 var sourcemaps = require('gulp-sourcemaps');
 var path=require('path');
+var plumber = require('gulp-plumber');
+
 var TS_SRC_ROOT ='./src/ts';
 var TS_SRC = TS_SRC_ROOT  + '/**/*.ts';
-var JS_DEST = './src/js/';
+var JS_DEST = './src/js';
 
 gulp.task("ts-compile", function () {
     // pull in the project TypeScript config
@@ -17,6 +19,7 @@ gulp.task("ts-compile", function () {
                 });
 
      return gulp.src(TS_SRC)
+        .pipe(plumber())
         .pipe(sourcemaps.init({identityMap:true}))
         .pipe(tsProject()).js
         // // https://github.com/floridoo/gulp-sourcemaps/issues/174
@@ -43,19 +46,23 @@ gulp.task("ts-compile", function () {
                 return source; // This affects the "sources" attribute even if it is a no-op. I don't know why.
             },
             includeContent:false,
-            sourceRoot: function(file,arg2){
-                console.log('sourceRoot file=' + JSON.stringify( file )); 
+            sourceRoot: function(file){
+                //console.log('sourceRoot file=' + JSON.stringify( file )); 
                 var dist_dir=path.dirname(file.history[0]);
                 var sourcePath=file.sourceMap.sources[0];
+                if(!sourcePath){
+                    return TS_SRC_ROOT;
+                }
                 var ts_root = path.join(file.cwd,TS_SRC_ROOT);
                 var src_fullpath=path.resolve(file.base, sourcePath);
                 var src_relative=path.relative( dist_dir , ts_root);
                 
                 var src_dir=path.dirname(src_relative);
 
-                console.log('sourceRoot src_relative=' + src_relative); 
-                console.log('sourceRoot src_fullpath=' + src_fullpath); 
-                console.log('sourceRoot src_dir=' + src_dir); 
+                // console.log('sourceRoot file=' + JSON.stringify( file )); 
+                // console.log('sourceRoot src_relative=' + src_relative); 
+                // console.log('sourceRoot src_fullpath=' + src_fullpath); 
+                // console.log('sourceRoot src_dir=' + src_dir); 
                 return src_relative;
             }
             // sourceRoot:"../ts",

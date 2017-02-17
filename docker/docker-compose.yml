@@ -2,6 +2,8 @@ version: '2'
 services:
     app:
         build: ./node
+        links:
+            - mongo
         container_name: 'app'
         working_dir: /home/app
         ports:  #HOST:CONTAINER
@@ -13,13 +15,21 @@ services:
         volumes:
             - ../app:/home/app
         command: npm start
-    db:
-        container_name: 'db'
-        image: mariadb
+    # db:
+    #     container_name: 'db'
+    #     image: mariadb
+    #     env_file: 
+    #         - .env
+    #     volumes:       #  追加
+    #         - ./mariadb/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+    mongo:
+        container_name: 'mongo'
+        # https://hub.docker.com/_/mongo/
+        image: mongo
         env_file: 
             - .env
-        volumes:       #  追加
-            - ./mariadb/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+        
+
 
 # Mac ~/src/nodeenv/docker$ docker-compose run app npm init
 # docker-compose run app npm install --save-dev gulp gulp-nodemon browser-sync

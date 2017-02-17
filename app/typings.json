@@ -5,6 +5,7 @@
     "express": "registry:npm/express#4.14.0+20160925001530"
   },
   "globalDependencies": {
+    "mongoose": "registry:dt/mongoose#4.7.0+20170212093753",
     "node": "registry:dt/node#7.0.0+20170204020307"
   }
 }

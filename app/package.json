@@ -24,6 +24,7 @@
     "rxjs": "^5.0.1",
     "sequelize": "^3.30.2",
     "serve-favicon": "~2.3.2",
+    "systemjs": "^0.20.9",
     "zone.js": "^0.7.7"
   },
   "devDependencies": {

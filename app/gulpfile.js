@@ -16,7 +16,7 @@ var SERVER_TS=0;
 var CLIENT_TS=1;
 var ts_srcs=[
     { task:"server-ts", config:'tsconfig.json', src: './src/ts', dest: './src/js' },
-    { task:"client-ts", config:'./clients/tsconfig.json', src: './clients/ts', dest: './clients/js' ,watchHandle: 'client:compress'}
+    { task:"client-ts", config:'./public/src/tsconfig.json', src: './public/src/ts', dest: './public/src/js' ,watchHandle: 'client:compress'}
 ];
 
 var ENTRY_POINT='./src/js/www.js';
@@ -40,51 +40,21 @@ function ts_compile(src) {
         .pipe(plumber())
         .pipe(sourcemaps.init({ identityMap: true }))
         .pipe(tsProject()).js
-        // // https://github.com/floridoo/gulp-sourcemaps/issues/174
-        // .pipe(sourcemaps.write('./', {
-        //     mapSources: (p) => path.basename(p), // This affects the "sources" attribute even if it is a no-op. I don't know why.
-        // }))
-        //https://www.npmjs.com/package/gulp-sourcemaps#write-inline-source-maps
-        // http://stackoverflow.com/a/34985647
         .pipe(sourcemaps.write({
-            //mapSources: (p) => path.basename(p), // This affects the "sources" attribute even if it is a no-op. I don't know why.
             mapSources: (sourcePath, file) => {
-                var dest_dir = path.dirname(file.history[0]);
                 var src_fullpath = path.resolve(file.base, sourcePath);
-                var map_path = path.relative(dest_dir, src_fullpath);
                 var src_root = path.resolve(file.cwd, src.src);
                 var source = path.relative(src_root, src_fullpath);
-                // console.log('sourcePath=' + JSON.stringify( sourcePath )); 
-                // console.log('file=' + JSON.stringify( file )); 
-                // console.log('dest_dir=' + dest_dir); 
-                // console.log('src_fullpath=' + src_fullpath);
-                // console.log('map_path=' + map_path);
-                // console.log('src_root=' + src_root);
-                // console.log('source=' + source);
                 return source; // This affects the "sources" attribute even if it is a no-op. I don't know why.
             },
             includeContent: false,
             sourceRoot: function (file) {
                 //console.log('sourceRoot file=' + JSON.stringify( file )); 
                 var dest_dir = path.dirname(file.history[0]);
-                var sourcePath = file.sourceMap.sources[0];
-                if (!sourcePath) {
-                    return src.src;
-                }
                 var ts_root = path.join(file.cwd, src.src);
-                var src_fullpath = path.resolve(file.base, sourcePath);
                 var src_relative = path.relative(dest_dir, ts_root);
-
-                var src_dir = path.dirname(src_relative);
-
-                // console.log('sourceRoot file=' + JSON.stringify( file )); 
-                // console.log('sourceRoot src_relative=' + src_relative); 
-                // console.log('sourceRoot src_fullpath=' + src_fullpath); 
-                // console.log('sourceRoot src_dir=' + src_dir); 
                 return src_relative;
             }
-            // sourceRoot:"../ts",
-            //sourceRoot:"/Users/pkjit/src/nodeenv/app/src/ts"
         }))
         .pipe(gulp.dest(src.dest));
     //.pipe(gulp.dest(TS_SRC_ROOT));
@@ -110,7 +80,7 @@ gulp.task('client:compress',['client:bundle'],function(){
 
 gulp.task('browser-sync', function () {
     browserSync.init({
-        files: ['*.html', '*.css', '*.js', 'public/**/*.*', 'views/**/*.*'],
+        files: ['*.html', '*.css', '*.js', 'public/**/*.*', 'views/**/*.*','!public/src/**/*.*'],
         proxy: 'http://localhost:3000',
         port: 4000,  // BrowserSync open 4000
         open: false

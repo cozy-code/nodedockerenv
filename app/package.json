@@ -39,6 +39,7 @@
     "gulp-typescript": "^3.1.4",
     "gulp-uglify": "^2.0.1",
     "sequelize-cli": "^2.5.1",
+    "tsify": "^3.0.1",
     "tslint": "^4.4.2",
     "typescript": "^2.1.6",
     "vinyl-buffer": "^1.0.0",

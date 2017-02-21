@@ -101,11 +101,12 @@ gulp.task(ts_srcs.client.task, function(){
             .pipe(gulp.dest(src.dest));
 });
 
-gulp.task('client:compress',['client:bundle'],function(){
+gulp.task('client:compress',[ts_srcs.client.task],function(){
     return gulp.src(ts_srcs.client.dest + '/app.js')
+        .pipe(sourcemaps.init({loadMaps: true}))
         .pipe(uglify())
         .pipe(rename('app.min.js'))
-        .pipe(sourcemaps.init({loadMaps: true}))
+        // .pipe(sourcemaps.init({loadMaps: true}))
         .pipe(sourcemaps.write('./'))
         .pipe(gulp.dest('./public/app/'));
 });

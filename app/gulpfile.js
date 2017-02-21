@@ -8,26 +8,37 @@ var path = require('path');
 var plumber = require('gulp-plumber');
 
 var browserify=require('browserify');
+var tsify = require("tsify");
 var vinyl     = require('vinyl-source-stream');
+var vinyl_buf = require('vinyl-buffer');
 var uglify = require('gulp-uglify');
 var rename = require('gulp-rename');
 
-var SERVER_TS=0;
-var CLIENT_TS=1;
-var ts_srcs=[
-    { task:"server-ts", config:'tsconfig.json', src: './src/ts', dest: './src/js' },
-    { task:"client-ts", config:'./public/src/tsconfig.json', src: './public/src/ts', dest: './public/src/js' ,watchHandle: 'client:compress'}
-];
+var ts_srcs= {
+    server : { task:"server-ts", config:'tsconfig.json', src: './src/ts', dest: './src/js' },
+    client : { task:"client-ts", config:'./public/src/tsconfig.json', src: './public/src/ts', dest: './public/src/js' ,watchHandle: 'client:compress'}
+};
 
 var ENTRY_POINT='./src/js/www.js';
 
-gulp.task(ts_srcs[SERVER_TS].task, function () {
-    return ts_compile(ts_srcs[SERVER_TS]);
+gulp.task(ts_srcs.server.task, function () {
+    return ts_compile(ts_srcs.server);
 });
 
-gulp.task(ts_srcs[CLIENT_TS].task, function () {
-    return ts_compile(ts_srcs[CLIENT_TS]);
-});
+// gulp.task(ts_srcs.client.task, function () {
+//     var src=ts_srcs.client;
+//     let tsProject = ts.createProject(src.config,
+//     {
+//         outDir: src.dest,
+//     });
+
+//     return gulp.src(path.join(src.src+ '/**/*.ts'))
+//         .pipe(plumber())
+//         .pipe(sourcemaps.init({ identityMap: true }))
+//         .pipe(tsProject()).js
+//         .pipe(sourcemaps.write('./'))
+//         .pipe(gulp.dest(src.dest));        
+// });
 
 function ts_compile(src) {
     // pull in the project TypeScript config
@@ -59,22 +70,43 @@ function ts_compile(src) {
         .pipe(gulp.dest(src.dest));
     //.pipe(gulp.dest(TS_SRC_ROOT));
 }
-
-gulp.task('client:bundle',[ts_srcs[CLIENT_TS].task], function(){
+// [ts_srcs.client.task],
+gulp.task(ts_srcs.client.task, function(){
+    var src=ts_srcs.client;
+    var ts_option={
+        "module": "commonjs",
+        "target": "es5",
+        "noImplicitAny": false,
+        "inlineSourceMap": true
+        /// "outDir": "./src/js"    //outDir define on gulpfile.js
+    };
     // Single entry point to browserify 
-    var app_entry_point=ts_srcs[CLIENT_TS].dest+'/main.js';
+    var app_entry_point=src.src+'/main.ts';
     console.log('Application entry point:' + app_entry_point);
 
-    return browserify({entries:[app_entry_point]})
+    // http://www.typescriptlang.org/docs/handbook/gulp.html
+    return browserify({
+                basedir: '.',
+                debug: true,
+                entries: [app_entry_point],
+                cache: {},
+                packageCache: {}
+            })
+            .plugin(tsify,{project:src.config})
             .bundle()
             .pipe(vinyl('app.js'))
-            .pipe(gulp.dest(ts_srcs[CLIENT_TS].dest));
+            .pipe(vinyl_buf())
+            .pipe(sourcemaps.init({loadMaps: true}))
+            .pipe(sourcemaps.write('./'))
+            .pipe(gulp.dest(src.dest));
 });
 
 gulp.task('client:compress',['client:bundle'],function(){
-    return gulp.src(ts_srcs[CLIENT_TS].dest + '/app.js')
+    return gulp.src(ts_srcs.client.dest + '/app.js')
         .pipe(uglify())
         .pipe(rename('app.min.js'))
+        .pipe(sourcemaps.init({loadMaps: true}))
+        .pipe(sourcemaps.write('./'))
         .pipe(gulp.dest('./public/app/'));
 });
 
@@ -87,7 +119,7 @@ gulp.task('browser-sync', function () {
     });
 });
 
-gulp.task('serve', ['server-ts','client:compress','browser-sync', 'watch'], function () {
+gulp.task('serve', [ts_srcs.server.task ,ts_srcs.client.task ,'browser-sync', 'watch'], function () {
     nodemon({
         //script: './bin/www' ,
         script: path.join(ENTRY_POINT),

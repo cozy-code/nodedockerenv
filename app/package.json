@@ -29,6 +29,7 @@
   },
   "devDependencies": {
     "browser-sync": "^2.18.7",
+    "browserify": "^14.1.0",
     "gulp": "^3.9.1",
     "gulp-browserify": "^0.5.1",
     "gulp-nodemon": "^2.2.1",

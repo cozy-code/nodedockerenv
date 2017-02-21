@@ -16,7 +16,7 @@ var SERVER_TS=0;
 var CLIENT_TS=1;
 var ts_srcs=[
     { task:"server-ts", config:'tsconfig.json', src: './src/ts', dest: './src/js' },
-    { task:"client-ts", config:'./clients/tsconfig.json', src: './clients/ts', dest: './public/app' ,watchHandle: 'client:compress'}
+    { task:"client-ts", config:'./clients/tsconfig.json', src: './clients/ts', dest: './clients/js' ,watchHandle: 'client:compress'}
 ];
 
 var ENTRY_POINT='./src/js/www.js';
@@ -105,7 +105,7 @@ gulp.task('client:compress',['client:bundle'],function(){
     return gulp.src(ts_srcs[CLIENT_TS].dest + '/app.js')
         .pipe(uglify())
         .pipe(rename('app.min.js'))
-        .pipe(gulp.dest(ts_srcs[CLIENT_TS].dest));
+        .pipe(gulp.dest('./public/app/'));
 });
 
 gulp.task('browser-sync', function () {

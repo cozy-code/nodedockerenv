@@ -63,3 +63,4 @@ app/src/js/
 app/src/ts/**/*.js
 
 app/public/app/
+app/clients/js/**/*.js

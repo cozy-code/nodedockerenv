@@ -9,12 +9,14 @@ var plumber = require('gulp-plumber');
 
 var browserify=require('browserify');
 var vinyl     = require('vinyl-source-stream');
+var uglify = require('gulp-uglify');
+var rename = require('gulp-rename');
 
 var SERVER_TS=0;
 var CLIENT_TS=1;
 var ts_srcs=[
     { task:"server-ts", config:'tsconfig.json', src: './src/ts', dest: './src/js' },
-    { task:"client-ts", config:'./clients/tsconfig.json', src: './clients/ts', dest: './public/app' ,watchHandle: 'client:bundle'}
+    { task:"client-ts", config:'./clients/tsconfig.json', src: './clients/ts', dest: './public/app' ,watchHandle: 'client:compress'}
 ];
 
 var ENTRY_POINT='./src/js/www.js';
@@ -99,6 +101,13 @@ gulp.task('client:bundle',[ts_srcs[CLIENT_TS].task], function(){
             .pipe(gulp.dest(ts_srcs[CLIENT_TS].dest));
 });
 
+gulp.task('client:compress',['client:bundle'],function(){
+    return gulp.src(ts_srcs[CLIENT_TS].dest + '/app.js')
+        .pipe(uglify())
+        .pipe(rename('app.min.js'))
+        .pipe(gulp.dest(ts_srcs[CLIENT_TS].dest));
+});
+
 gulp.task('browser-sync', function () {
     browserSync.init({
         files: ['*.html', '*.css', '*.js', 'public/**/*.*', 'views/**/*.*'],
@@ -108,7 +117,7 @@ gulp.task('browser-sync', function () {
     });
 });
 
-gulp.task('serve', ['server-ts','client:bundle','browser-sync', 'watch'], function () {
+gulp.task('serve', ['server-ts','client:compress','browser-sync', 'watch'], function () {
     nodemon({
         //script: './bin/www' ,
         script: path.join(ENTRY_POINT),

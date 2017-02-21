@@ -61,3 +61,5 @@ typings/
 
 app/src/js/
 app/src/ts/**/*.js
+
+app/public/app/

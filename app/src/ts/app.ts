@@ -41,7 +41,13 @@ class App {
         this.express.use(bodyParser.json());
         this.express.use(bodyParser.urlencoded({ extended: false }));
         this.express.use(cookieParser());
-        this.express.use(express.static(path.join(__dirname, 'public')));
+        var static_path:string = path.join(__dirname, '../../public');
+        console.log("static path:" + static_path);
+        this.express.use(express.static(static_path));
+        var script_path:string = path.join(__dirname, '../../node_modules');
+        console.log("script library(node_modules) path:" + script_path);
+        this.express.use('/lib', express.static(script_path));
+        
     }
 
     private setErrorHandler(): void {

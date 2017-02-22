@@ -1,4 +1,8 @@
 var gulp = require('gulp');
+var gutil = require("gulp-util");
+var spawn = require('child_process').spawn;
+
+
 var nodemon = require('gulp-nodemon');
 var browserSync = require('browser-sync').create();
 
@@ -9,6 +13,8 @@ var plumber = require('gulp-plumber');
 
 var browserify=require('browserify');
 var tsify = require("tsify");
+var watchify = require("watchify");
+
 var vinyl     = require('vinyl-source-stream');
 var vinyl_buf = require('vinyl-buffer');
 var uglify = require('gulp-uglify');
@@ -16,7 +22,7 @@ var rename = require('gulp-rename');
 
 var ts_srcs= {
     server : { task:"server-ts", config:'tsconfig.json', src: './src/ts', dest: './src/js' },
-    client : { task:"client-ts", config:'./public/src/tsconfig.json', src: './public/src/ts', dest: './public/src/js' ,watchHandle: 'client:compress'}
+    client : { task:"client-ts", config:'./public/src/tsconfig.json', src: './public/src/ts', dest: './public/src/js'}
 };
 
 var ENTRY_POINT='./src/js/www.js';
@@ -70,74 +76,104 @@ function ts_compile(src) {
         .pipe(gulp.dest(src.dest));
     //.pipe(gulp.dest(TS_SRC_ROOT));
 }
-// [ts_srcs.client.task],
-gulp.task(ts_srcs.client.task, function(){
-    var src=ts_srcs.client;
-    var ts_option={
-        "module": "commonjs",
-        "target": "es5",
-        "noImplicitAny": false,
-        "inlineSourceMap": true
-        /// "outDir": "./src/js"    //outDir define on gulpfile.js
-    };
-    // Single entry point to browserify 
-    var app_entry_point=src.src+'/main.ts';
-    console.log('Application entry point:' + app_entry_point);
+gulp.task('client:bundle',function(){
+    //https://www.typescriptlang.org/docs/handbook/gulp.html
+    const bf=browserify({
+        basedir: '.',
+        debug: true,
+        //entries: [ts_srcs.client.src+'/main.ts'],
+        cache: {},
+        packageCache: {}
+    }).plugin(tsify,
+        {
+            "module": "commonjs",
+            "target": "es5",
+            "noImplicitAny": false,
+            "inlineSourceMap": true
+        }
+    );
 
-    // http://www.typescriptlang.org/docs/handbook/gulp.html
-    return browserify({
-                basedir: '.',
-                debug: true,
-                entries: [app_entry_point],
-                cache: {},
-                packageCache: {}
-            })
-            .plugin(tsify,{project:src.config})
+    const wbf = watchify(bf);
+    wbf.add(ts_srcs.client.src+'/main.ts');
+    const bundle=function(){
+        console.log("client:bundle bundle!!!!!");
+        return wbf
             .bundle()
             .pipe(vinyl('app.js'))
             .pipe(vinyl_buf())
-            .pipe(sourcemaps.init({loadMaps: true}))
-            .pipe(sourcemaps.write('./'))
-            .pipe(gulp.dest(src.dest));
+//            .pipe(sourcemaps.init({loadMaps: true}))
+//            .pipe(sourcemaps.write('./'))
+            .pipe(gulp.dest(ts_srcs.client.dest))
+            // .on('end',function(){ //http://blog.anatoo.jp/entry/20140420/1397995711
+            //     gulp.src(ts_srcs.client.dest + '/app.js')
+            //         .pipe(sourcemaps.init({loadMaps: true}))
+            //         .pipe(uglify())
+            //         .pipe(rename('app.min.js'))
+            //         .pipe(sourcemaps.write('./'))
+            //         .pipe(gulp.dest('./public/app/'));
+            // })
+            ;
+    };
+    wbf.on('update', bundle);
+    wbf.on("log", gutil.log);
+    return bundle();
 });
+
+gulp.task(ts_srcs.client.task, ['client:bundle']);
 
 gulp.task('client:compress',[ts_srcs.client.task],function(){
     return gulp.src(ts_srcs.client.dest + '/app.js')
         .pipe(sourcemaps.init({loadMaps: true}))
         .pipe(uglify())
         .pipe(rename('app.min.js'))
-        // .pipe(sourcemaps.init({loadMaps: true}))
         .pipe(sourcemaps.write('./'))
         .pipe(gulp.dest('./public/app/'));
 });
 
 gulp.task('browser-sync', function () {
     browserSync.init({
-        files: ['*.html', '*.css', '*.js', 'public/**/*.*', 'views/**/*.*','!public/src/**/*.*'],
+        reloadDelay: 500,   //ms
+        files: ['*.html', '*.css', 'public/src/js/app.js.map', 'views/**/*.*'
+            ,'!public/src/**/*.ts'
+            ],
         proxy: 'http://localhost:3000',
         port: 4000,  // BrowserSync open 4000
         open: false
     });
 });
 
-gulp.task('serve', [ts_srcs.server.task ,ts_srcs.client.task ,'browser-sync', 'watch'], function () {
+gulp.task('serve', [ts_srcs.server.task ,'client:bundle' ,'browser-sync', 'watch'], function () {
     nodemon({
         //script: './bin/www' ,
         script: path.join(ENTRY_POINT),
+        ignore: [  // nodemon で監視しないディレクトリ
+            'node_modules',
+            'views',
+            'public',
+        ],
         nodeArgs: ['--debug=0.0.0.0:5858', '--nolazy'] // --debug --debug-brk=5858 '--debug=0.0.0.0:5858' '--inspect'
     });
 });
 
 gulp.task('watch', function () {
-    for(var i=0;i<ts_srcs.length;i++){
-        var src=ts_srcs[i];
-        var task=src.watchHandle ? src.watchHandle : src.task;
-        var ts_watch = gulp.watch(src.src + '/**/*.ts', [ task ]);
-        console.log("watch " + src.src + '/**/*.ts to run ' +task);
-        ts_watch.on('change', function (event) {
-            console.log('File ' + event.path + ' was ' + event.type + ', running tasks...');
-        });
-    }
+    var task=ts_srcs.server.watchHandle ? ts_srcs.server.watchHandle : ts_srcs.server.task;
+    var ts_watch = gulp.watch(ts_srcs.server.src + '/**/*.ts', [ task ]);
+    console.log("watch " + ts_srcs.server.src + '/**/*.ts to run ' +task);
+    ts_watch.on('change', function (event) {
+        console.log('File ' + event.path + ' was ' + event.type + ', running tasks...');
+    });
+
 });
 
-gulp.task('default', ['serve']);
+//gulp.task('default', ['serve']);
+// http://stackoverflow.com/questions/22886682/how-can-gulp-be-restarted-upon-each-gulpfile-change
+// http://qiita.com/taku_oka/items/5bfb96788ae579084a51
+gulp.task('default', function() {
+    var process;
+    function restart() {
+        if (process) process.kill();
+        process = spawn('gulp', ['serve'], {stdio: 'inherit'});
+    }
+    gulp.watch('gulpfile.js', restart);
+    restart();
+});

@@ -21,46 +21,32 @@ var uglify = require('gulp-uglify');
 var rename = require('gulp-rename');
 
 var ts_srcs= {
-    server : { task:"server-ts", config:'tsconfig.json', src: './src/ts', dest: './src/js' },
-    client : { task:"client-ts", config:'./public/src/tsconfig.json', src: './public/src/ts', dest: './public/src/js'}
+    server : { task:"server-ts", config:'tsconfig.json', src_root: './src/ts', dest: './src/js' },
+    client : { task:"client-ts", config:'./public/src/tsconfig.json', 
+        src_root: './public/src/ts',    // typescript source dir 
+        dest: './public/src/js' ,       // javascript output target
+        appJs:'app.js'  // browserify target
+    }
 };
 
 var ENTRY_POINT='./src/js/www.js';
 
+// compile server side TypeScript
 gulp.task(ts_srcs.server.task, function () {
-    return ts_compile(ts_srcs.server);
-});
-
-// gulp.task(ts_srcs.client.task, function () {
-//     var src=ts_srcs.client;
-//     let tsProject = ts.createProject(src.config,
-//     {
-//         outDir: src.dest,
-//     });
-
-//     return gulp.src(path.join(src.src+ '/**/*.ts'))
-//         .pipe(plumber())
-//         .pipe(sourcemaps.init({ identityMap: true }))
-//         .pipe(tsProject()).js
-//         .pipe(sourcemaps.write('./'))
-//         .pipe(gulp.dest(src.dest));        
-// });
-
-function ts_compile(src) {
     // pull in the project TypeScript config
-    let tsProject = ts.createProject(src.config,
+    let tsProject = ts.createProject(ts_srcs.server.config,
         {
-            outDir: src.dest,
+            outDir: ts_srcs.server.dest,
         });
 
-    return gulp.src(path.join(src.src+ '/**/*.ts'))
+    return gulp.src(path.join(ts_srcs.server.src_root+ '/**/*.ts'))
         .pipe(plumber())
         .pipe(sourcemaps.init({ identityMap: true }))
         .pipe(tsProject()).js
         .pipe(sourcemaps.write({
             mapSources: (sourcePath, file) => {
                 var src_fullpath = path.resolve(file.base, sourcePath);
-                var src_root = path.resolve(file.cwd, src.src);
+                var src_root = path.resolve(file.cwd, ts_srcs.server.src_root);
                 var source = path.relative(src_root, src_fullpath);
                 return source; // This affects the "sources" attribute even if it is a no-op. I don't know why.
             },
@@ -68,20 +54,21 @@ function ts_compile(src) {
             sourceRoot: function (file) {
                 //console.log('sourceRoot file=' + JSON.stringify( file )); 
                 var dest_dir = path.dirname(file.history[0]);
-                var ts_root = path.join(file.cwd, src.src);
+                var ts_root = path.join(file.cwd, ts_srcs.server.src_root);
                 var src_relative = path.relative(dest_dir, ts_root);
                 return src_relative;
             }
         }))
-        .pipe(gulp.dest(src.dest));
-    //.pipe(gulp.dest(TS_SRC_ROOT));
-}
-gulp.task('client:bundle',function(){
+        .pipe(gulp.dest(ts_srcs.server.dest));
+});
+
+// compile client side typescript
+gulp.task(ts_srcs.client.task,function(){
     //https://www.typescriptlang.org/docs/handbook/gulp.html
     const bf=browserify({
         basedir: '.',
-        debug: true,
-        //entries: [ts_srcs.client.src+'/main.ts'],
+        debug: true,    //Enable source maps
+        entries: [ts_srcs.client.src_root+'/main.ts'],
         cache: {},
         packageCache: {}
     }).plugin(tsify,
@@ -94,24 +81,17 @@ gulp.task('client:bundle',function(){
     );
 
     const wbf = watchify(bf);
-    wbf.add(ts_srcs.client.src+'/main.ts');
+    // wbf.add(ts_srcs.client.src_root+'/main.ts');
     const bundle=function(){
-        console.log("client:bundle bundle!!!!!");
+        console.log(ts_srcs.client.task + " bundle!!!!!");
         return wbf
             .bundle()
-            .pipe(vinyl('app.js'))
+            .pipe(vinyl(ts_srcs.client.appJs))
             .pipe(vinyl_buf())
-//            .pipe(sourcemaps.init({loadMaps: true}))
-//            .pipe(sourcemaps.write('./'))
+            .pipe(sourcemaps.init({loadMaps: true}))
+            .pipe(sourcemaps.write('./'))
             .pipe(gulp.dest(ts_srcs.client.dest))
-            // .on('end',function(){ //http://blog.anatoo.jp/entry/20140420/1397995711
-            //     gulp.src(ts_srcs.client.dest + '/app.js')
-            //         .pipe(sourcemaps.init({loadMaps: true}))
-            //         .pipe(uglify())
-            //         .pipe(rename('app.min.js'))
-            //         .pipe(sourcemaps.write('./'))
-            //         .pipe(gulp.dest('./public/app/'));
-            // })
+            .pipe(browserSync.stream()) //reload on browser
             ;
     };
     wbf.on('update', bundle);
@@ -119,22 +99,25 @@ gulp.task('client:bundle',function(){
     return bundle();
 });
 
-gulp.task(ts_srcs.client.task, ['client:bundle']);
-
-gulp.task('client:compress',[ts_srcs.client.task],function(){
-    return gulp.src(ts_srcs.client.dest + '/app.js')
+gulp.task('client:compress',function(){
+    var app_js=path.join(ts_srcs.client.dest, ts_srcs.client.appJs);
+    return gulp.src(app_js)
         .pipe(sourcemaps.init({loadMaps: true}))
-        .pipe(uglify())
+        .pipe(uglify({mangle:false, compress:false}))
         .pipe(rename('app.min.js'))
         .pipe(sourcemaps.write('./'))
         .pipe(gulp.dest('./public/app/'));
 });
 
 gulp.task('browser-sync', function () {
+    var app_js=path.join(ts_srcs.client.dest, ts_srcs.client.appJs);
+    console.log("Application JS:" + app_js)
     browserSync.init({
         reloadDelay: 500,   //ms
-        files: ['*.html', '*.css', 'public/src/js/app.js.map', 'views/**/*.*'
-            ,'!public/src/**/*.ts'
+        files: ['*.html', '*.css', 
+            //app_js, 
+            'views/**/*.*'
+            //,'!public/src/**/*.ts'
             ],
         proxy: 'http://localhost:3000',
         port: 4000,  // BrowserSync open 4000
@@ -142,7 +125,7 @@ gulp.task('browser-sync', function () {
     });
 });
 
-gulp.task('serve', [ts_srcs.server.task ,'client:bundle' ,'browser-sync', 'watch'], function () {
+gulp.task('serve', [ts_srcs.server.task ,ts_srcs.client.task ,'browser-sync', 'watch'], function () {
     nodemon({
         //script: './bin/www' ,
         script: path.join(ENTRY_POINT),
@@ -156,12 +139,23 @@ gulp.task('serve', [ts_srcs.server.task ,'client:bundle' ,'browser-sync', 'watch
 });
 
 gulp.task('watch', function () {
-    var task=ts_srcs.server.watchHandle ? ts_srcs.server.watchHandle : ts_srcs.server.task;
-    var ts_watch = gulp.watch(ts_srcs.server.src + '/**/*.ts', [ task ]);
-    console.log("watch " + ts_srcs.server.src + '/**/*.ts to run ' +task);
-    ts_watch.on('change', function (event) {
+    function file_changed(event){
         console.log('File ' + event.path + ' was ' + event.type + ', running tasks...');
-    });
+    }
+    // watch server side typescript
+    var ts_watch = gulp.watch(ts_srcs.server.src_root + '/**/*.ts', [ ts_srcs.server.task ]);
+    console.log("watch " + ts_srcs.server.src_root + '/**/*.ts to run ' + ts_srcs.server.task);
+    ts_watch.on('change', file_changed );
+
+    //watch client side typescript
+    // watch by watchify
+
+    // watch client side compiled src
+    // var app_js=path.join(ts_srcs.client.dest, ts_srcs.client.appJs);
+    // var appJs_watch = gulp.watch(app_js, [ 'client:compress' ]);
+    // console.log("watch " + app_js + ' to run client:compress');
+    // appJs_watch.on('change', file_changed );
+
 
 });
 

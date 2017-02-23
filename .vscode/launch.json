@@ -15,7 +15,9 @@
             "outFiles": [
                 "${workspaceRoot}/app/src/js/**/*.js"
             ],
-            "trace": "sm",
+            //"trace": "sm",
+            "restart": true,
+            "stopOnEntry": false,
             "address": "localhost",
             "port": 5858
         }

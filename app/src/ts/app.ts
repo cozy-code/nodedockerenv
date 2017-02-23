@@ -7,10 +7,18 @@ import bodyParser = require('body-parser');
 
 import index from './routes/index';
 import mongo from './routes/mongo';
+import user from './routes/user';
+
 import * as mongoose from 'mongoose';
 
 class App {
     public express: express.Application;
+
+    private setRoutes(): void {
+        this.express.use('/', index);
+        this.express.use('/mongo', mongo);
+        this.express.use('/user', user);
+    }
 
     constructor() {
         // express instance
@@ -70,10 +78,6 @@ class App {
         });
     }
 
-    private setRoutes(): void {
-        this.express.use('/', index);
-        this.express.use('/mongo', mongo);
-    }
 }
 
 export default new App();

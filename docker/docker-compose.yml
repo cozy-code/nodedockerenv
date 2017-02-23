@@ -2,6 +2,8 @@ version: '2'
 services:
     app:
         build: ./node
+        links:
+            - mongo
         container_name: 'app'
         working_dir: /home/app
         ports:  #HOST:CONTAINER
@@ -13,13 +15,21 @@ services:
         volumes:
             - ../app:/home/app
         command: npm start
-    db:
-        container_name: 'db'
-        image: mariadb
+    # db:
+    #     container_name: 'db'
+    #     image: mariadb
+    #     env_file: 
+    #         - .env
+    #     volumes:       #  追加
+    #         - ./mariadb/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+    mongo:
+        container_name: 'mongo'
+        # https://hub.docker.com/_/mongo/
+        image: mongo
         env_file: 
             - .env
-        volumes:       #  追加
-            - ./mariadb/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+        
+
 
 # Mac ~/src/nodeenv/docker$ docker-compose run app npm init
 # docker-compose run app npm install --save-dev gulp gulp-nodemon browser-sync
@@ -30,3 +40,10 @@ services:
 # create database app_db;
 # grant all privileges on app_db.* to 'appuser'@'%' identified by 'example';
 # FLUSH PRIVILEGES;
+
+#angular2
+# docker-compose run app npm install --save @angular/{core,common,compiler,platform-browser,platform-browser-dynamic} rxjs@5.0.1 zone.js@^0.7.4 core-js
+# docker-compose run app npm install --save systemjs
+# docker-compose run app npm install --save-dev child_process tsify gulp-browserify gulp-sequence vinyl-source-stream gulp-uglify gulp-rename watchify gulp-util
+
+# docker-compose run app typings install --save --global dt~core-js 

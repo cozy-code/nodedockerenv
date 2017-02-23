@@ -40,3 +40,10 @@ services:
 # create database app_db;
 # grant all privileges on app_db.* to 'appuser'@'%' identified by 'example';
 # FLUSH PRIVILEGES;
+
+#angular2
+# docker-compose run app npm install --save @angular/{core,common,compiler,platform-browser,platform-browser-dynamic} rxjs@5.0.1 zone.js@^0.7.4 core-js
+# docker-compose run app npm install --save systemjs
+# docker-compose run app npm install --save-dev child_process tsify gulp-browserify gulp-sequence vinyl-source-stream gulp-uglify gulp-rename watchify gulp-util
+
+# docker-compose run app typings install --save --global dt~core-js 

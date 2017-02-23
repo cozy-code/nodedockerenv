@@ -61,3 +61,8 @@ typings/
 
 app/src/js/
 app/src/ts/**/*.js
+
+app/public/app/
+app/public/src/js/
+
+.bash_history

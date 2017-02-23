@@ -1,99 +1,173 @@
 var gulp = require('gulp');
+var gutil = require("gulp-util");
+var spawn = require('child_process').spawn;
+
+
 var nodemon = require('gulp-nodemon');
 var browserSync = require('browser-sync').create();
 
 var ts = require('gulp-typescript');
 var sourcemaps = require('gulp-sourcemaps');
-var path=require('path');
+var path = require('path');
 var plumber = require('gulp-plumber');
 
-var TS_SRC_ROOT ='./src/ts';
-var TS_SRC = TS_SRC_ROOT  + '/**/*.ts';
-var JS_DEST = './src/js';
+var browserify=require('browserify');
+var tsify = require("tsify");
+var watchify = require("watchify");
 
-gulp.task("ts-compile", function () {
+var vinyl     = require('vinyl-source-stream');
+var vinyl_buf = require('vinyl-buffer');
+var uglify = require('gulp-uglify');
+var rename = require('gulp-rename');
+
+var ts_srcs= {
+    server : { task:"server-ts", config:'tsconfig.json', src_root: './src/ts', dest: './src/js' },
+    client : { task:"client-ts", config:'./public/src/tsconfig.json', 
+        src_root: './public/src/ts',    // typescript source dir 
+        dest: './public/src/js' ,       // javascript output target
+        appJs:'app.js'  // browserify target
+    }
+};
+
+var ENTRY_POINT='./src/js/www.js';
+
+// compile server side TypeScript
+gulp.task(ts_srcs.server.task, function () {
     // pull in the project TypeScript config
-    let tsProject = ts.createProject('tsconfig.json',
-                {
-                    outDir: JS_DEST,
-                });
+    let tsProject = ts.createProject(ts_srcs.server.config,
+        {
+            outDir: ts_srcs.server.dest,
+        });
 
-     return gulp.src(TS_SRC)
+    return gulp.src(path.join(ts_srcs.server.src_root+ '/**/*.ts'))
         .pipe(plumber())
-        .pipe(sourcemaps.init({identityMap:true}))
+        .pipe(sourcemaps.init({ identityMap: true }))
         .pipe(tsProject()).js
-        // // https://github.com/floridoo/gulp-sourcemaps/issues/174
-        // .pipe(sourcemaps.write('./', {
-        //     mapSources: (p) => path.basename(p), // This affects the "sources" attribute even if it is a no-op. I don't know why.
-        // }))
-        //https://www.npmjs.com/package/gulp-sourcemaps#write-inline-source-maps
-        // http://stackoverflow.com/a/34985647
         .pipe(sourcemaps.write({
-            //mapSources: (p) => path.basename(p), // This affects the "sources" attribute even if it is a no-op. I don't know why.
-            mapSources: (sourcePath, file) =>{
-                var dist_dir=path.dirname(file.history[0]);
-                var src_fullpath=path.resolve(file.base, sourcePath);
-                var map_path=path.relative(dist_dir,src_fullpath); 
-                var src_root=path.resolve(file.cwd,TS_SRC_ROOT);
-                var source=path.relative(src_root,src_fullpath);
-                // console.log('sourcePath=' + JSON.stringify( sourcePath )); 
-                // console.log('file=' + JSON.stringify( file )); 
-                // console.log('dist_dir=' + dist_dir); 
-                // console.log('src_fullpath=' + src_fullpath);
-                // console.log('map_path=' + map_path);
-                // console.log('src_root=' + src_root);
-                // console.log('source=' + source);
+            mapSources: (sourcePath, file) => {
+                var src_fullpath = path.resolve(file.base, sourcePath);
+                var src_root = path.resolve(file.cwd, ts_srcs.server.src_root);
+                var source = path.relative(src_root, src_fullpath);
                 return source; // This affects the "sources" attribute even if it is a no-op. I don't know why.
             },
-            includeContent:false,
-            sourceRoot: function(file){
+            includeContent: false,
+            sourceRoot: function (file) {
                 //console.log('sourceRoot file=' + JSON.stringify( file )); 
-                var dist_dir=path.dirname(file.history[0]);
-                var sourcePath=file.sourceMap.sources[0];
-                if(!sourcePath){
-                    return TS_SRC_ROOT;
-                }
-                var ts_root = path.join(file.cwd,TS_SRC_ROOT);
-                var src_fullpath=path.resolve(file.base, sourcePath);
-                var src_relative=path.relative( dist_dir , ts_root);
-                
-                var src_dir=path.dirname(src_relative);
-
-                // console.log('sourceRoot file=' + JSON.stringify( file )); 
-                // console.log('sourceRoot src_relative=' + src_relative); 
-                // console.log('sourceRoot src_fullpath=' + src_fullpath); 
-                // console.log('sourceRoot src_dir=' + src_dir); 
+                var dest_dir = path.dirname(file.history[0]);
+                var ts_root = path.join(file.cwd, ts_srcs.server.src_root);
+                var src_relative = path.relative(dest_dir, ts_root);
                 return src_relative;
             }
-            // sourceRoot:"../ts",
-            //sourceRoot:"/Users/pkjit/src/nodeenv/app/src/ts"
         }))
-        .pipe(gulp.dest(JS_DEST));
-        //.pipe(gulp.dest(TS_SRC_ROOT));
+        .pipe(gulp.dest(ts_srcs.server.dest));
 });
 
-gulp.task('browser-sync', function() {
+// compile client side typescript
+gulp.task(ts_srcs.client.task,function(){
+    //https://www.typescriptlang.org/docs/handbook/gulp.html
+    const bf=browserify({
+        basedir: '.',
+        debug: true,    //Enable source maps
+        entries: [ts_srcs.client.src_root+'/main.ts'],
+        cache: {},
+        packageCache: {}
+    }).plugin(tsify,
+        {
+            "module": "commonjs",
+            "target": "es5",
+            "noImplicitAny": false,
+            "inlineSourceMap": true
+        }
+    );
+
+    const wbf = watchify(bf);
+    // wbf.add(ts_srcs.client.src_root+'/main.ts');
+    const bundle=function(){
+        console.log(ts_srcs.client.task + " bundle!!!!!");
+        return wbf
+            .bundle()
+            .pipe(vinyl(ts_srcs.client.appJs))
+            .pipe(vinyl_buf())
+            .pipe(sourcemaps.init({loadMaps: true}))
+            .pipe(sourcemaps.write('./'))
+            .pipe(gulp.dest(ts_srcs.client.dest))
+            .pipe(browserSync.stream()) //reload on browser
+            ;
+    };
+    wbf.on('update', bundle);
+    wbf.on("log", gutil.log);
+    return bundle();
+});
+
+gulp.task('client:compress',function(){
+    var app_js=path.join(ts_srcs.client.dest, ts_srcs.client.appJs);
+    return gulp.src(app_js)
+        .pipe(sourcemaps.init({loadMaps: true}))
+        .pipe(uglify({mangle:false, compress:false}))
+        .pipe(rename('app.min.js'))
+        .pipe(sourcemaps.write('./'))
+        .pipe(gulp.dest('./public/app/'));
+});
+
+gulp.task('browser-sync', function () {
+    var app_js=path.join(ts_srcs.client.dest, ts_srcs.client.appJs);
+    console.log("Application JS:" + app_js)
     browserSync.init({
-        files:['*.html', '*.css', '*.js','public/**/*.*', 'views/**/*.*'],
+        reloadDelay: 500,   //ms
+        files: ['*.html', '*.css', 
+            //app_js, 
+            'views/**/*.*'
+            //,'!public/src/**/*.ts'
+            ],
         proxy: 'http://localhost:3000',
         port: 4000,  // BrowserSync open 4000
         open: false
     });
 });
 
-gulp.task('serve', ['ts-compile','browser-sync','watch'], function () {
-  nodemon({
-      //script: './bin/www' ,
-      script: path.join(JS_DEST,'/www.js') ,
-      nodeArgs: ['--debug=0.0.0.0:5858','--nolazy'] // --debug --debug-brk=5858 '--debug=0.0.0.0:5858' '--inspect'
-  });
-});
-
-gulp.task('watch',function(){
-    var ts_watch= gulp.watch(TS_SRC,['ts-compile']);
-    ts_watch.on('change', function(event) {
-        console.log('File ' + event.path + ' was ' + event.type + ', running tasks...');
+gulp.task('serve', [ts_srcs.server.task ,ts_srcs.client.task ,'browser-sync', 'watch'], function () {
+    nodemon({
+        //script: './bin/www' ,
+        script: path.join(ENTRY_POINT),
+        ignore: [  // nodemon で監視しないディレクトリ
+            'node_modules',
+            'views',
+            'public',
+        ],
+        nodeArgs: ['--debug=0.0.0.0:5858', '--nolazy'] // --debug --debug-brk=5858 '--debug=0.0.0.0:5858' '--inspect'
     });
 });
 
-gulp.task('default', ['serve']);
+gulp.task('watch', function () {
+    function file_changed(event){
+        console.log('File ' + event.path + ' was ' + event.type + ', running tasks...');
+    }
+    // watch server side typescript
+    var ts_watch = gulp.watch(ts_srcs.server.src_root + '/**/*.ts', [ ts_srcs.server.task ]);
+    console.log("watch " + ts_srcs.server.src_root + '/**/*.ts to run ' + ts_srcs.server.task);
+    ts_watch.on('change', file_changed );
+
+    //watch client side typescript
+    // watch by watchify
+
+    // watch client side compiled src
+    // var app_js=path.join(ts_srcs.client.dest, ts_srcs.client.appJs);
+    // var appJs_watch = gulp.watch(app_js, [ 'client:compress' ]);
+    // console.log("watch " + app_js + ' to run client:compress');
+    // appJs_watch.on('change', file_changed );
+
+
+});
+
+//gulp.task('default', ['serve']);
+// http://stackoverflow.com/questions/22886682/how-can-gulp-be-restarted-upon-each-gulpfile-change
+// http://qiita.com/taku_oka/items/5bfb96788ae579084a51
+gulp.task('default', function() {
+    var process;
+    function restart() {
+        if (process) process.kill();
+        process = spawn('gulp', ['serve'], {stdio: 'inherit'});
+    }
+    gulp.watch('gulpfile.js', restart);
+    restart();
+});

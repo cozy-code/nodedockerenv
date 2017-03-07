@@ -76,9 +76,14 @@ gulp.task(ts_srcs.client.task,function(){
             "module": "commonjs",
             "target": "es5",
             "noImplicitAny": false,
-            "inlineSourceMap": true
+            "inlineSourceMap": true,
+             "emitDecoratorMetadata": true,
+            "experimentalDecorators": true
+            // https://angular.io/docs/ts/latest/guide/typescript-configuration.html
+            //http://stackoverflow.com/a/39127395
         }
     );
+
 
     const wbf = watchify(bf);
     // wbf.add(ts_srcs.client.src_root+'/main.ts');
@@ -97,6 +102,14 @@ gulp.task(ts_srcs.client.task,function(){
     wbf.on('update', bundle);
     wbf.on("log", gutil.log);
     return bundle();
+});
+
+/**
+ * Copy all resources that are not TypeScript files into build directory.
+ */
+gulp.task("client:resources", () => {
+    return gulp.src([ path.join(ts_srcs.client.src_root,"/**/*") , "!**/*.ts"])
+        .pipe(gulp.dest(ts_srcs.client.dest));
 });
 
 gulp.task('client:compress',function(){
@@ -150,7 +163,11 @@ gulp.task('watch', function () {
     //watch client side typescript
     // watch by watchify
 
-    // watch client side compiled src
+    // watch client side src
+    // resources(Non ts files)
+    var res_watch = gulp.watch([ path.join(ts_srcs.client.src_root,"/**/*") , "!**/*.ts"], ["client:resources"])
+    res_watch.on('change', file_changed );
+    // compiled js file
     // var app_js=path.join(ts_srcs.client.dest, ts_srcs.client.appJs);
     // var appJs_watch = gulp.watch(app_js, [ 'client:compress' ]);
     // console.log("watch " + app_js + ' to run client:compress');

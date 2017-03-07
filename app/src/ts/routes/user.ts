@@ -13,6 +13,8 @@ export class UserRouter{
     //// functions
     // create user
     public create(req:Request, res:Response,next:NextFunction){
+        console.log("UserRouter.create called")
+        console.log(req.body);
         var user = <User.IUser>{name: req.body.name, email: req.body.email };
 
         User.User.create(user,(err,user)=>{
